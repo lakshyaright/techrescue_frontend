@@ -22,7 +22,42 @@ Configure the following inbound port rules in your Azure NSG (`techrescue-fronte
 
 ---
 
-## 🛠 2. Step-by-Step Manual Deployment on Frontend VM
+## 🌐 2. How Frontend Connects to Backend API
+
+TechRescue frontend connects to the backend API via either of the following two production patterns:
+
+### Pattern A: Azure Application Gateway (Path-Based Routing — Recommended)
+1. **Application Gateway** receives all traffic on Public IP Port 80/443.
+2. In the Gateway Routing Rule:
+   - `/*` $\rightarrow$ Routes to Frontend VM (`10.0.1.4:80`)
+   - `/api/*` $\rightarrow$ Routes to Backend VM (`10.0.2.4:5000`)
+3. In Frontend `.env`, set:
+   ```env
+   VITE_API_URL=/api/v1
+   ```
+4. The browser automatically sends API calls to `/api/v1/...`, and the Application Gateway transparently forwards them to the Backend VM without CORS issues.
+
+### Pattern B: Nginx Reverse Proxy on Frontend VM
+If you want the Frontend VM to proxy API requests directly to the Backend VM:
+1. In `/etc/nginx/sites-available/techrescue-frontend`:
+   ```nginx
+   location /api/ {
+       proxy_pass http://10.0.2.4:5000;
+       proxy_http_version 1.1;
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+   }
+   ```
+2. In Frontend `.env`, set:
+   ```env
+   VITE_API_URL=/api/v1
+   ```
+3. Nginx intercepts `/api/` requests and forwards them to the Backend VM over the private Azure virtual network.
+
+---
+
+## 🛠 3. Step-by-Step Manual Deployment on Frontend VM
 
 ### Step 1: Connect to the Frontend VM
 ```bash
@@ -37,65 +72,47 @@ sudo apt install -y curl wget git build-essential ufw nginx
 
 ### Step 3: Install Node.js 20.x LTS
 ```bash
-# Add NodeSource official repository
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-
-# Install Node.js & NPM
 sudo apt install -y nodejs
 
-# Verify versions
 node -v   # Should output v20.x.x
 npm -v    # Should output 10.x.x
 ```
 
 ### Step 4: Clone Repository & Setup Permissions
 ```bash
-# Create application root directory
 sudo mkdir -p /var/www/techrescue-frontend
 sudo chown -R $USER:$USER /var/www/techrescue-frontend
 
-# Clone the frontend repository
 git clone https://github.com/lakshyaright/techrescue_frontend.git /var/www/techrescue-frontend
 cd /var/www/techrescue-frontend
 ```
 
 ### Step 5: Configure Environment Variables
 ```bash
-# Copy example environment file
 cp .env.example .env
-
-# Edit .env to set your Backend API URL
 nano .env
 ```
-Inside `.env`, configure the API target:
+Inside `.env`, configure:
 ```env
-# If using Azure Application Gateway with path routing, use relative URL:
 VITE_API_URL=/api/v1
-
-# If pointing directly to Backend VM or external domain:
-# VITE_API_URL=https://api.yourdomain.com/api/v1
 ```
 
 ### Step 6: Install Dependencies & Build Production Bundle
 ```bash
-# Install node packages
 npm install
-
-# Build static production assets
 npm run build
 
-# Verify build output
+# Verify build output exists in dist/
 ls -la dist/
-# Output will contain index.html and assets/ directory
 ```
 
 ### Step 7: Configure Nginx Web Server
-Create the Nginx site configuration file:
 ```bash
 sudo nano /etc/nginx/sites-available/techrescue-frontend
 ```
 
-Paste the following production configuration:
+Paste the following production Nginx configuration:
 ```nginx
 server {
     listen 80 default_server;
@@ -103,7 +120,6 @@ server {
 
     server_name _;
 
-    # Path to Vite built production bundle
     root /var/www/techrescue-frontend/dist;
     index index.html index.htm;
 
@@ -135,8 +151,7 @@ server {
         return 200 "OK\n";
     }
 
-    # Optional Reverse Proxy to Backend VM Private IP
-    # (Used if traffic hits Frontend VM directly instead of Application Gateway path routing)
+    # Reverse Proxy to Backend VM Private IP (Update 10.0.2.4 with Backend VM IP)
     location /api/ {
         proxy_pass http://10.0.2.4:5000;
         proxy_http_version 1.1;
@@ -158,15 +173,10 @@ server {
 }
 ```
 
-Enable the configuration and restart Nginx:
+Enable configuration and restart Nginx:
 ```bash
-# Link to sites-enabled
 sudo ln -sf /etc/nginx/sites-available/techrescue-frontend /etc/nginx/sites-enabled/default
-
-# Test Nginx configuration syntax
 sudo nginx -t
-
-# Restart Nginx service
 sudo systemctl restart nginx
 sudo systemctl enable nginx
 ```
@@ -182,27 +192,30 @@ sudo ufw status
 
 ---
 
-## 🔍 3. Verification & Health Checks
+## 🔍 4. Verification & Health Checks
 
-Run these commands directly on the VM:
+Run these commands directly on the Frontend VM:
 ```bash
-# 1. Verify Nginx is active and running
+# 1. Verify Nginx status
 sudo systemctl status nginx
 
-# 2. Check HTTP status code for web root
+# 2. Check Frontend Home Page
 curl -I http://localhost/
 # Expected: HTTP/1.1 200 OK
 
-# 3. Test Azure Application Gateway Health Probe
+# 3. Check Health Probe for Application Gateway
 curl -i http://localhost/health
 # Expected: HTTP/1.1 200 OK, Content: OK
+
+# 4. Check Backend API connectivity through Nginx proxy
+curl -i http://localhost/api/health
+# Expected: HTTP/1.1 200 OK, {"status":"OK","database":"connected"}
 ```
 
 ---
 
-## 🔄 4. How to Update Frontend Code (CI/CD / Manual Pull)
+## 🔄 5. How to Update Frontend Code
 
-When you make changes to the repository:
 ```bash
 cd /var/www/techrescue-frontend
 git pull origin main
@@ -210,14 +223,3 @@ npm install
 npm run build
 sudo systemctl reload nginx
 ```
-
----
-
-## 🚨 5. Troubleshooting & Logs
-
-| Issue | Diagnostic Command | Solution |
-| :--- | :--- | :--- |
-| **Nginx 404 on page refresh** | `cat /etc/nginx/sites-enabled/default` | Ensure `try_files $uri $uri/ /index.html;` is present inside `location /`. |
-| **Nginx 502 Bad Gateway on `/api/`** | `curl -i http://10.0.2.4:5000/health` | Ensure Backend VM (10.0.2.4) is running on port 5000 and NSG allows port 5000. |
-| **Nginx Error Logs** | `sudo tail -n 50 /var/log/nginx/error.log` | Review web server errors. |
-| **Nginx Access Logs** | `sudo tail -f /var/log/nginx/access.log` | View real-time incoming requests from Application Gateway. |

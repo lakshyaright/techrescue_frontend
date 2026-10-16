@@ -57,4 +57,30 @@ export const api = {
   patch: <T = any>(endpoint: string, body: any) =>
     apiRequest<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T = any>(endpoint: string) => apiRequest<T>(endpoint, { method: 'DELETE' }),
+
+  // Health and connectivity test between Frontend and Backend VM
+  testConnection: async (): Promise<{ isConnected: boolean; message: string; details?: any }> => {
+    try {
+      // Try root health or /api/health
+      const healthUrl = API_BASE_URL.replace(/\/v1$/, '').replace(/\/api$/, '') + '/health';
+      const res = await fetch(healthUrl, { method: 'GET' });
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          isConnected: true,
+          message: 'Successfully connected to TechRescue Backend API',
+          details: data,
+        };
+      }
+      return {
+        isConnected: false,
+        message: `Backend returned status ${res.status}: ${res.statusText}`,
+      };
+    } catch (err: any) {
+      return {
+        isConnected: false,
+        message: `Cannot reach Backend API at ${API_BASE_URL}: ${err.message}`,
+      };
+    }
+  },
 };
