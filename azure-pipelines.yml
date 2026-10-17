@@ -21,7 +21,16 @@ stages:
           - checkout: self
             clean: true
 
-            
+          - task: PowerShell@2
+            inputs:
+              targetType: 'inline'
+              script: |
+                ssh -i C:\Users\shiva.rai\Downloads\Devops\ssh-key\test.pem azureuser@104.42.217.83
+                
+                
+                npm install -D esbuild@^0.28.0
+                
+                npm run build
           - script: npm install -D esbuild@^0.28.0
             displayName: 'Install Dependencies'
 
