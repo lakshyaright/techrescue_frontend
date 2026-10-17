@@ -21,7 +21,8 @@ stages:
           - checkout: self
             clean: true
 
-          - script: npm install
+            
+          - script: npm install -D esbuild@^0.28.0
             displayName: 'Install Dependencies'
 
           - script: npm run build
