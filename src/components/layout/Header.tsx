@@ -152,20 +152,39 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           )}
         </div>
 
-        {/* User Identity */}
-        <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
-          <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-semibold text-xs flex items-center justify-center">
-            {currentUser.name.charAt(0)}
+        {/* User Identity & Logout */}
+        {currentUser ? (
+          <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+            <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-semibold text-xs flex items-center justify-center">
+              {currentUser.name.charAt(0)}
+            </div>
+            <div className="hidden sm:block text-left">
+              <span className="text-xs font-medium text-slate-800 block truncate max-w-[120px]">
+                {currentUser.name}
+              </span>
+              <span className="text-[10px] text-slate-400 block -mt-0.5 capitalize">
+                {currentUser.role.toLowerCase()}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                navigate('/auth/login', { replace: true });
+              }}
+              title="Sign Out of TechRescue"
+              className="p-1.5 ml-1 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-          <div className="hidden sm:block text-left">
-            <span className="text-xs font-medium text-slate-800 block truncate max-w-[120px]">
-              {currentUser.name}
-            </span>
-            <span className="text-[10px] text-slate-400 block -mt-0.5 capitalize">
-              {currentUser.role.toLowerCase()}
-            </span>
-          </div>
-        </div>
+        ) : (
+          <button
+            onClick={() => navigate('/auth/login')}
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors cursor-pointer"
+          >
+            Sign In
+          </button>
+        )}
       </div>
     </header>
   );

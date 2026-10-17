@@ -34,7 +34,7 @@ export const DemoBanner: React.FC = () => {
           </span>
           <span className="text-slate-400">·</span>
           <span className="text-slate-300 font-medium truncate">
-            Active: <strong className="text-white">{currentUser.name}</strong> ({role})
+            Active: <strong className="text-white">{currentUser ? currentUser.name : 'Not Signed In'}</strong> ({currentUser ? role : 'Guest'})
           </span>
         </div>
 

@@ -4,6 +4,9 @@ import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { DataProvider } from './context/DataContext';
 
+// Route Protection Component
+import { ProtectedRoute } from './components/common/ProtectedRoute';
+
 // Layouts
 import { PublicLayout } from './components/layout/PublicLayout';
 import { PortalLayout } from './components/layout/PortalLayout';
@@ -73,43 +76,43 @@ export default function App() {
                 <Route path="/auth/forgot-password" element={<ForgotPassword />} />
               </Route>
 
-              {/* Portal Workspace (Client, Expert, Engineer, Admin) */}
+              {/* Portal Workspace (Strictly Protected by Role & Authentication) */}
               <Route element={<PortalLayout />}>
-                {/* Client Routes */}
-                <Route path="/client/dashboard" element={<ClientDashboard />} />
-                <Route path="/client/raise-query" element={<RaiseQuery />} />
-                <Route path="/client/query/:id" element={<QueryDetails />} />
-                <Route path="/client/history" element={<QueryHistory />} />
-                <Route path="/client/activity" element={<RecentActivity />} />
-                <Route path="/client/experts" element={<AlignExperts />} />
-                <Route path="/client/engineers" element={<FieldEngineers />} />
-                <Route path="/client/messages" element={<ClientMessages />} />
-                <Route path="/client/payments" element={<ClientPayments />} />
-                <Route path="/client/profile" element={<ClientProfile />} />
+                {/* Client Workspace */}
+                <Route path="/client/dashboard" element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']}><ClientDashboard /></ProtectedRoute>} />
+                <Route path="/client/raise-query" element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']}><RaiseQuery /></ProtectedRoute>} />
+                <Route path="/client/query/:id" element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']}><QueryDetails /></ProtectedRoute>} />
+                <Route path="/client/history" element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']}><QueryHistory /></ProtectedRoute>} />
+                <Route path="/client/activity" element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']}><RecentActivity /></ProtectedRoute>} />
+                <Route path="/client/experts" element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']}><AlignExperts /></ProtectedRoute>} />
+                <Route path="/client/engineers" element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']}><FieldEngineers /></ProtectedRoute>} />
+                <Route path="/client/messages" element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']}><ClientMessages /></ProtectedRoute>} />
+                <Route path="/client/payments" element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']}><ClientPayments /></ProtectedRoute>} />
+                <Route path="/client/profile" element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']}><ClientProfile /></ProtectedRoute>} />
 
-                {/* Expert Routes */}
-                <Route path="/expert/dashboard" element={<ExpertDashboard />} />
-                <Route path="/expert/jobs" element={<ExpertJobs />} />
-                <Route path="/expert/messages" element={<ClientMessages />} />
-                <Route path="/expert/earnings" element={<ExpertEarnings />} />
-                <Route path="/expert/profile" element={<ExpertProfile />} />
+                {/* Remote Expert Workspace */}
+                <Route path="/expert/dashboard" element={<ProtectedRoute allowedRoles={['EXPERT', 'ADMIN']}><ExpertDashboard /></ProtectedRoute>} />
+                <Route path="/expert/jobs" element={<ProtectedRoute allowedRoles={['EXPERT', 'ADMIN']}><ExpertJobs /></ProtectedRoute>} />
+                <Route path="/expert/messages" element={<ProtectedRoute allowedRoles={['EXPERT', 'ADMIN']}><ClientMessages /></ProtectedRoute>} />
+                <Route path="/expert/earnings" element={<ProtectedRoute allowedRoles={['EXPERT', 'ADMIN']}><ExpertEarnings /></ProtectedRoute>} />
+                <Route path="/expert/profile" element={<ProtectedRoute allowedRoles={['EXPERT', 'ADMIN']}><ExpertProfile /></ProtectedRoute>} />
 
-                {/* Field Engineer Routes */}
-                <Route path="/engineer/dashboard" element={<EngineerDashboard />} />
-                <Route path="/engineer/jobs" element={<EngineerJobs />} />
-                <Route path="/engineer/map" element={<EngineerMap />} />
-                <Route path="/engineer/messages" element={<ClientMessages />} />
-                <Route path="/engineer/earnings" element={<EngineerEarnings />} />
-                <Route path="/engineer/profile" element={<EngineerProfile />} />
+                {/* On-Site Field Engineer Workspace */}
+                <Route path="/engineer/dashboard" element={<ProtectedRoute allowedRoles={['ENGINEER', 'ADMIN']}><EngineerDashboard /></ProtectedRoute>} />
+                <Route path="/engineer/jobs" element={<ProtectedRoute allowedRoles={['ENGINEER', 'ADMIN']}><EngineerJobs /></ProtectedRoute>} />
+                <Route path="/engineer/map" element={<ProtectedRoute allowedRoles={['ENGINEER', 'ADMIN']}><EngineerMap /></ProtectedRoute>} />
+                <Route path="/engineer/messages" element={<ProtectedRoute allowedRoles={['ENGINEER', 'ADMIN']}><ClientMessages /></ProtectedRoute>} />
+                <Route path="/engineer/earnings" element={<ProtectedRoute allowedRoles={['ENGINEER', 'ADMIN']}><EngineerEarnings /></ProtectedRoute>} />
+                <Route path="/engineer/profile" element={<ProtectedRoute allowedRoles={['ENGINEER', 'ADMIN']}><EngineerProfile /></ProtectedRoute>} />
 
-                {/* Admin Routes */}
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/users" element={<AdminUsers />} />
-                <Route path="/admin/queries" element={<AdminQueries />} />
-                <Route path="/admin/payments" element={<AdminPayments />} />
-                <Route path="/admin/reports" element={<AdminReports />} />
-                <Route path="/admin/audit" element={<AdminAuditLogs />} />
-                <Route path="/admin/settings" element={<AdminSettings />} />
+                {/* Admin Workspace (Strictly ADMIN only) */}
+                <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminUsers /></ProtectedRoute>} />
+                <Route path="/admin/queries" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminQueries /></ProtectedRoute>} />
+                <Route path="/admin/payments" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminPayments /></ProtectedRoute>} />
+                <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminReports /></ProtectedRoute>} />
+                <Route path="/admin/audit" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminAuditLogs /></ProtectedRoute>} />
+                <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminSettings /></ProtectedRoute>} />
               </Route>
 
               {/* Fallback */}

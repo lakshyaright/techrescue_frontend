@@ -17,6 +17,7 @@ import {
 } from '../data/mockData';
 import { useAuth } from './AuthContext';
 import { useNotifications } from './NotificationContext';
+import { api } from '../services/api';
 
 interface DataContextType {
   tickets: QueryTicket[];
@@ -102,6 +103,52 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('techrescue_payments', JSON.stringify(payments));
   }, [payments]);
 
+  // Synchronize live queries from backend API when available
+  useEffect(() => {
+    api.get('/queries').then(res => {
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        const backendTickets: QueryTicket[] = res.data.map((q: any) => ({
+          id: q.id,
+          ticketNumber: q.ticket_number,
+          title: q.title,
+          category: q.category,
+          subcategory: q.subcategory || '',
+          impact: q.impact,
+          urgency: q.urgency,
+          priority: q.priority,
+          status: q.status,
+          clientId: q.client_id,
+          clientName: 'Enterprise Client',
+          clientCompany: 'FinTech Global Systems',
+          clientEmail: 'client@enterprise.com',
+          shortDescription: q.short_description,
+          detailedDescription: q.detailed_description,
+          environment: q.environment,
+          assignmentGroup: q.assignment_group,
+          estimatedCost: parseFloat(q.estimated_cost || '3500'),
+          actualCost: q.actual_cost ? parseFloat(q.actual_cost) : undefined,
+          isEscrowFunded: Boolean(q.is_escrow_funded),
+          isPaymentReleased: Boolean(q.is_payment_released),
+          createdAt: q.created_at,
+          updatedAt: q.updated_at,
+          slaDeadline: q.sla_deadline,
+          slaBreached: Boolean(q.sla_breached),
+          assignedExpertId: q.assigned_expert_id,
+          assignedEngineerId: q.assigned_engineer_id,
+          resolutionSummary: q.resolution_summary,
+          preventiveMeasures: q.preventive_measures,
+          clientRating: q.client_rating,
+          clientFeedback: q.client_feedback,
+          attachments: [],
+          workLogs: q.workLogs || []
+        }));
+        setTickets(backendTickets);
+      }
+    }).catch(() => {
+      // Offline fallback
+    });
+  }, [currentUser]);
+
   const computePriority = (impact: QueryTicket['impact'], urgency: QueryTicket['urgency']): TicketPriority => {
     if (impact === 'ENTERPRISE' || urgency === 'EMERGENCY') return 'CRITICAL';
     if (impact === 'HIGH' && urgency === 'HIGH') return 'HIGH';
@@ -121,6 +168,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const createTicket: DataContextType['createTicket'] = async (data) => {
+    if (!currentUser) {
+      return { success: false, error: 'Authentication required. Please sign in to submit a ticket.' };
+    }
+
     const priority = computePriority(data.impact, data.urgency);
     const slaHours = computeSlaHours(priority);
     const now = new Date();
@@ -201,6 +252,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       invoiceNumber: `INV-TR-${datePrefix}-${sequentialNum}`
     };
     setPayments(prev => [newPayment, ...prev]);
+
+    // Sync with PostgreSQL backend API if connected
+    api.post('/queries', {
+      title: data.title,
+      category: data.category,
+      subcategory: data.subcategory,
+      impact: data.impact,
+      urgency: data.urgency,
+      shortDescription: data.shortDescription,
+      detailedDescription: data.detailedDescription,
+      environment: data.environment,
+      assignmentGroup: data.assignmentGroup,
+      estimatedCost
+    }).catch(() => {});
 
     // Notify experts and admins
     addNotification({
@@ -287,6 +352,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       linkTo: `/client/query/${ticket.id}`
     });
 
+    // Execute atomic PostgreSQL row-level lock on backend
+    api.post(`/queries/${ticket.id}/accept`, {}).catch(() => {});
+
     return { success: true };
   };
 
@@ -361,16 +429,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
 
+    const actorId = currentUser?.id || 'usr-system';
+    const actorName = currentUser?.name || 'System Operator';
+    const actorRole = currentUser?.role || 'CLIENT';
+
     setActivityLogs(prev => [
       {
         id: `act-${Date.now()}`,
         queryId: ticket.id,
         ticketNumber: ticket.ticketNumber,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        userRole: currentUser.role,
+        userId: actorId,
+        userName: actorName,
+        userRole: actorRole,
         action: `Status Changed to ${newStatus}`,
-        details: notes || `Ticket status progressed to ${newStatus} by ${currentUser.name}.`,
+        details: notes || `Ticket status progressed to ${newStatus} by ${actorName}.`,
         timestamp: now,
         type: 'status_change'
       },
@@ -378,7 +450,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ]);
 
     // Send notifications to stakeholders
-    if (ticket.clientId !== currentUser.id) {
+    if (ticket.clientId !== actorId) {
       addNotification({
         userId: ticket.clientId,
         title: `Ticket Status: ${newStatus}`,
@@ -396,12 +468,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!ticket) return { success: false, error: 'Ticket not found' };
 
     const now = new Date().toISOString();
+    const authorId = currentUser?.id || 'usr-expert-1';
+    const authorName = currentUser?.name || 'Specialist';
+    const authorRole = currentUser?.role || 'EXPERT';
+
     const newLog: WorkLog = {
       id: `wl-${Date.now()}`,
       queryId: ticketId,
-      authorId: currentUser.id,
-      authorName: currentUser.name,
-      authorRole: currentUser.role,
+      authorId,
+      authorName,
+      authorRole,
       hoursSpent: hours,
       notes,
       timestamp: now,
@@ -425,11 +501,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: `act-${Date.now()}`,
         queryId: ticket.id,
         ticketNumber: ticket.ticketNumber,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        userRole: currentUser.role,
+        userId: authorId,
+        userName: authorName,
+        userRole: authorRole,
         action: 'Work Log Logged',
-        details: `${currentUser.name} logged ${hours}h: "${notes.slice(0, 80)}${notes.length > 80 ? '...' : ''}"`,
+        details: `${authorName} logged ${hours}h: "${notes.slice(0, 80)}${notes.length > 80 ? '...' : ''}"`,
         timestamp: now,
         type: 'comment'
       },
@@ -444,12 +520,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!ticket) return { success: false, error: 'Ticket not found' };
 
     const now = new Date().toISOString();
+    const senderId = currentUser?.id || 'usr-client-1';
+    const senderName = currentUser?.name || 'User';
+    const senderRole = currentUser?.role || 'CLIENT';
+
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       queryId: ticketId,
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      senderRole: currentUser.role,
+      senderId,
+      senderName,
+      senderRole,
       message: text,
       timestamp: now,
       attachmentName
@@ -463,11 +543,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: `act-${Date.now()}`,
         queryId: ticket.id,
         ticketNumber: ticket.ticketNumber,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        userRole: currentUser.role,
+        userId: senderId,
+        userName: senderName,
+        userRole: senderRole,
         action: 'Message Sent',
-        details: `${currentUser.name}: "${text.slice(0, 60)}..."`,
+        details: `${senderName}: "${text.slice(0, 60)}..."`,
         timestamp: now,
         type: 'comment'
       },
@@ -498,16 +578,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
 
+    const resolverId = currentUser?.id || 'usr-expert-1';
+    const resolverName = currentUser?.name || 'Specialist';
+    const resolverRole = currentUser?.role || 'EXPERT';
+
     setActivityLogs(prev => [
       {
         id: `act-${Date.now()}`,
         queryId: ticket.id,
         ticketNumber: ticket.ticketNumber,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        userRole: currentUser.role,
+        userId: resolverId,
+        userName: resolverName,
+        userRole: resolverRole,
         action: 'Ticket Resolved',
-        details: `Issue marked as resolved by ${currentUser.name}. Awaiting client confirmation.`,
+        details: `Issue marked as resolved by ${resolverName}. Awaiting client confirmation.`,
         timestamp: now,
         type: 'resolution'
       },
@@ -563,7 +647,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (payee) {
         const netEarning = Math.round((ticket.actualCost || ticket.estimatedCost) * 0.9);
         updateCurrentUser({
-          totalEarnings: (currentUser.id === payee.id ? (currentUser.totalEarnings || 0) : (payee.totalEarnings || 0)) + netEarning
+          totalEarnings: (currentUser?.id === payee.id ? (currentUser?.totalEarnings || 0) : (payee.totalEarnings || 0)) + netEarning
         });
 
         addNotification({
@@ -576,14 +660,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
+    const confirmerId = currentUser?.id || 'usr-client-1';
+    const confirmerName = currentUser?.name || 'Client';
+    const confirmerRole = currentUser?.role || 'CLIENT';
+
     setActivityLogs(prev => [
       {
         id: `act-${Date.now()}`,
         queryId: ticket.id,
         ticketNumber: ticket.ticketNumber,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        userRole: currentUser.role,
+        userId: confirmerId,
+        userName: confirmerName,
+        userRole: confirmerRole,
         action: 'Resolution Confirmed & Escrow Released',
         details: `Client approved resolution (${rating}★). Escrow payout disbursed successfully.`,
         timestamp: now,
@@ -601,12 +689,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map(t => (t.id === ticketId ? { ...t, ...updates, updatedAt: now } : t))
     );
 
+    const adminId = currentUser?.id || 'usr-admin-1';
+    const adminName = currentUser?.name || 'Administrator';
+
     setActivityLogs(prev => [
       {
         id: `act-${Date.now()}`,
         queryId: ticketId,
-        userId: currentUser.id,
-        userName: currentUser.name,
+        userId: adminId,
+        userName: adminName,
         userRole: 'ADMIN',
         action: 'Admin Supervisory Override',
         details: `Ticket modified by Admin: ${JSON.stringify(updates)}`,
