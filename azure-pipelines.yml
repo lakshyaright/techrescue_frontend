@@ -1,49 +1,49 @@
-trigger:
-  - main
+  trigger:
+    - main
 
-pool:
-  name: app-agent-pool
+  pool:
+    name: app-agent-pool
 
-steps:
-  # 1. Checkout code on Windows agent
-  - checkout: self
-    clean: true
+  steps:
+    # 1. Checkout code on Windows agent
+    - checkout: self
+      clean: true
 
-  # # 2. Upload frontend source to Azure VM
-  - task: PowerShell@2
-    displayName: 'Upload Code to Azure VM'
-    inputs:
-      targetType: inline
-      script: |
-        tar --exclude=.git --exclude=node_modules -czf source.tar.gz .
+    # # 2. Upload frontend source to Azure VM
+    - task: PowerShell@2
+      displayName: 'Upload Code to Azure VM'
+      inputs:
+        targetType: inline
+        script: |
+          tar --exclude=.git --exclude=node_modules -czf source.tar.gz .
 
-        scp -i "C:\Users\shiva.rai\Downloads\Devops\ssh-key\test.pem" `
-          source.tar.gz `
-          azureuser@104.42.217.83:/home/azureuser/source.tar.gz
+          scp -i "C:\Users\shiva.rai\Downloads\Devops\ssh-key\test.pem" `
+            source.tar.gz `
+            azureuser@104.42.217.83:/home/azureuser/source.tar.gz
 
-        if ($LASTEXITCODE -ne 0) {
-          throw "Upload failed"
-        }
+          if ($LASTEXITCODE -ne 0) {
+            throw "Upload failed"
+          }
 
-  # 3. Build and deploy on Azure Linux VM
-  - task: SSH@0
-    displayName: 'Build and Deploy on Azure VM'
-    inputs:
-      sshEndpoint: 'Azure-Linux-VM-SSH'
-      runOptions: inline
-      interpreterCommand: /bin/bash
-      failOnStdErr: false
-      inline: |
-        set -e
+    # 3. Build and deploy on Azure Linux VM
+    - task: SSH@0
+      displayName: 'Build and Deploy on Azure VM'
+      inputs:
+        sshEndpoint: 'Azure-Linux-VM-SSH'
+        runOptions: inline
+        interpreterCommand: /bin/bash
+        failOnStdErr: false
+        inline: |
+          set -e
 
-        mkdir -p /home/azureuser/frontend
-        # tar -xzf /home/azureuser/source.tar.gz -C /home/azureuser/frontend
+          mkdir -p /home/azureuser/frontend
+          tar -xzf /home/azureuser/source.tar.gz -C /home/azureuser/frontend
 
-        cd /home/azureuser/frontend
+          cd /home/azureuser/frontend
 
-        npm install -D esbuild@^0.28.0
-        npm run build
+          npm install -D esbuild@^0.28.0
+          npm run build
 
-        sudo rsync -av --delete dist/ /var/www/html/
+          sudo rsync -av --delete dist/ /var/www/html/
 
-        echo "Frontend deployed successfully"
+          echo "Frontend deployed successfully"
