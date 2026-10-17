@@ -26,7 +26,7 @@
           npm run build
           
           
-          cd dist
+          cd /home/azureuser/techrescue_frontend/dist
           
           sudo cp -r * /var/www/html/
           
