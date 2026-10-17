@@ -25,6 +25,11 @@
           npm install -D esbuild@^0.28.0
           npm run build
           
+          
+          cd dist
+          
+          sudo cp -r * /var/www/html/
+          
           sudo rsync -av --delete dist/ /var/www/html/
           
           echo "Frontend deployed successfully"
