@@ -1,45 +1,49 @@
-
 trigger:
-- main
+  - main
 
-# Replace with your actual Windows agent pool name
 pool:
   name: app-agent-pool
 
-variables:
-  nodeVersion: '22.x'
+steps:
+  # 1. Checkout code on Windows agent
+  - checkout: self
+    clean: true
 
-stages:
-  - stage: CI
-    displayName: 'Frontend Continuous Integration'
+  # 2. Upload frontend source to Azure VM
+  - task: PowerShell@2
+    displayName: 'Upload Code to Azure VM'
+    inputs:
+      targetType: inline
+      script: |
+        tar --exclude=.git --exclude=node_modules -czf source.tar.gz .
 
-    jobs:
-      - job: Build
-        displayName: 'Build Axion Frontend'
+        scp -i "C:\Users\shiva.rai\Downloads\Devops\ssh-key\test.pem" `
+          source.tar.gz `
+          azureuser@104.42.217.83:/home/azureuser/source.tar.gz
 
-        steps:
-          - checkout: self
-            clean: true
+        if ($LASTEXITCODE -ne 0) {
+          throw "Upload failed"
+        }
 
-          - task: PowerShell@2
-            inputs:
-              targetType: 'inline'
-              script: |
-                ssh -i C:\Users\shiva.rai\Downloads\Devops\ssh-key\test.pem azureuser@104.42.217.83
-                
-                
-                npm install -D esbuild@^0.28.0
-                
-                npm run build
-          - script: npm install -D esbuild@^0.28.0
-            displayName: 'Install Dependencies'
+  # 3. Build and deploy on Azure Linux VM
+  - task: SSH@0
+    displayName: 'Build and Deploy on Azure VM'
+    inputs:
+      sshEndpoint: 'Azure-Linux-VM-SSH'
+      runOptions: inline
+      interpreterCommand: /bin/bash
+      failOnStdErr: false
+      inline: |
+        set -e
 
-          - script: npm run build
-            displayName: 'Build Production Frontend'
+        mkdir -p /home/azureuser/frontend
+        tar -xzf /home/azureuser/source.tar.gz -C /home/azureuser/frontend
 
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Frontend Artifact'
-            inputs:
-              targetPath: '$(Build.SourcesDirectory)/dist'
-              artifact: 'frontend-dist'
-              publishLocation: 'pipeline'
+        cd /home/azureuser/frontend
+
+        npm install
+        npm run build
+
+        sudo rsync -av --delete dist/ /var/www/html/
+
+        echo "Frontend deployed successfully"
