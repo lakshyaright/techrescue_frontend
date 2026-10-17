@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Menu, X, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Menu, X, ArrowRight, ShieldCheck, Shield } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -49,8 +49,15 @@ export const Navbar: React.FC = () => {
           </Link>
         </nav>
 
-        {/* Zone 3: 1-2 primary actions */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* Zone 3: primary actions */}
+        <div className="hidden md:flex items-center gap-2.5">
+          <Link
+            to="/admin/dashboard"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-blue-700 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg transition-colors"
+          >
+            <Shield className="w-3.5 h-3.5 text-blue-600" />
+            <span>Admin Console</span>
+          </Link>
           <Link
             to="/auth/login"
             className="px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
@@ -59,7 +66,7 @@ export const Navbar: React.FC = () => {
           </Link>
           <button
             onClick={() => navigate(getDashboardLink())}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-xs whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-xs whitespace-nowrap cursor-pointer"
           >
             <span>Launch Portal</span>
             <ArrowRight className="w-3.5 h-3.5" />

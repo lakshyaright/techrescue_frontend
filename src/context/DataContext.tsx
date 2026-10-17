@@ -126,6 +126,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }));
         setPayments(livePayments);
       }
+
+      // 3. Fetch audit logs from PostgreSQL
+      const aRes = await api.get('/audit-logs');
+      if (aRes.success && Array.isArray(aRes.data)) {
+        const liveLogs: ActivityLog[] = aRes.data.map((a: any) => ({
+          id: a.id,
+          queryId: a.query_id || '',
+          ticketNumber: a.ticket_number || '',
+          userId: a.user_id,
+          userName: a.user_name,
+          userRole: a.user_role,
+          action: a.action,
+          details: a.details,
+          timestamp: a.created_at,
+          type: a.activity_type || 'comment'
+        }));
+        setActivityLogs(liveLogs);
+      }
     } catch (err) {
       console.warn('Failed to load database records:', err);
     } finally {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { ShieldCheck, ArrowRight, AlertCircle, Loader2, Wifi, WifiOff, Lock, Mail } from 'lucide-react';
+import { ShieldCheck, ArrowRight, AlertCircle, Loader2, Wifi, WifiOff, Lock, Mail, Shield, Building2, Laptop, Wrench } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
@@ -109,6 +109,65 @@ export const Login: React.FC = () => {
             <span>{errorMessage}</span>
           </div>
         )}
+
+        {/* Quick Credentials from Database */}
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+              Quick Logins (Seeded in PostgreSQL):
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => { setEmail('admin@techrescue.io'); setPassword('password123'); }}
+              className="p-2 bg-white border border-slate-200 hover:border-blue-400 rounded-lg text-left transition-colors shadow-2xs group cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5 text-blue-700 font-semibold mb-0.5">
+                <Shield className="w-3.5 h-3.5 shrink-0" />
+                <span>Admin Console</span>
+              </div>
+              <span className="text-[11px] text-slate-500 block truncate">admin@techrescue.io</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setEmail('sonu.patel@fintechglobal.com'); setPassword('password123'); }}
+              className="p-2 bg-white border border-slate-200 hover:border-blue-400 rounded-lg text-left transition-colors shadow-2xs group cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5 text-blue-700 font-semibold mb-0.5">
+                <Building2 className="w-3.5 h-3.5 shrink-0" />
+                <span>Client Portal</span>
+              </div>
+              <span className="text-[11px] text-slate-500 block truncate">sonu.patel@...</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setEmail('rahul.sharma@cloudarchitects.io'); setPassword('password123'); }}
+              className="p-2 bg-white border border-slate-200 hover:border-blue-400 rounded-lg text-left transition-colors shadow-2xs group cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5 text-blue-700 font-semibold mb-0.5">
+                <Laptop className="w-3.5 h-3.5 shrink-0" />
+                <span>Expert Console</span>
+              </div>
+              <span className="text-[11px] text-slate-500 block truncate">rahul.sharma@...</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setEmail('rajesh.k@fieldtechrescue.in'); setPassword('password123'); }}
+              className="p-2 bg-white border border-slate-200 hover:border-blue-400 rounded-lg text-left transition-colors shadow-2xs group cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5 text-blue-700 font-semibold mb-0.5">
+                <Wrench className="w-3.5 h-3.5 shrink-0" />
+                <span>Field Engineer</span>
+              </div>
+              <span className="text-[11px] text-slate-500 block truncate">rajesh.k@...</span>
+            </button>
+          </div>
+        </div>
 
         {/* Standard Form */}
         <div className="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-2xs space-y-4">
