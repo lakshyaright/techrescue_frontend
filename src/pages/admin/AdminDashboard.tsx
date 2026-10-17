@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 
 export const AdminDashboard: React.FC = () => {
   const { tickets, activityLogs, payments } = useData();
+  const { users } = useAuth();
   const navigate = useNavigate();
 
   const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -46,54 +47,54 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 6 Core Executive KPI Counters specified in prompt */}
+      {/* Core Real-Time Executive KPI Counters from PostgreSQL */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-[11px] text-slate-500 block font-medium">Total Platform Users</span>
+          <span className="text-[11px] text-slate-500 block font-medium">Database Users</span>
           <span className="font-mono text-xl font-bold text-slate-900 block mt-1 tabular-nums">
-            12,450
+            {users.length}
           </span>
-          <span className="text-[10px] text-emerald-600 font-medium block mt-0.5">+142 this week</span>
+          <span className="text-[10px] text-emerald-600 font-medium block mt-0.5">Live PostgreSQL records</span>
         </div>
 
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-[11px] text-slate-500 block font-medium">Active Remote Experts</span>
+          <span className="text-[11px] text-slate-500 block font-medium">Vetted Experts</span>
           <span className="font-mono text-xl font-bold text-blue-700 block mt-1 tabular-nums">
-            2,340
+            {users.filter(u => u.role === 'EXPERT').length}
           </span>
-          <span className="text-[10px] text-slate-400 block mt-0.5">Top 3% vetted</span>
+          <span className="text-[10px] text-slate-400 block mt-0.5">Registered specialists</span>
         </div>
 
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
           <span className="text-[11px] text-slate-500 block font-medium">Field Engineers</span>
           <span className="font-mono text-xl font-bold text-indigo-700 block mt-1 tabular-nums">
-            1,240
+            {users.filter(u => u.role === 'ENGINEER').length}
           </span>
-          <span className="text-[10px] text-slate-400 block mt-0.5">30+ metro hubs</span>
+          <span className="text-[10px] text-slate-400 block mt-0.5">On-site technicians</span>
         </div>
 
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
           <span className="text-[11px] text-slate-500 block font-medium">Open Queries</span>
           <span className="font-mono text-xl font-bold text-amber-700 block mt-1 tabular-nums">
-            {tickets.filter(t => t.status === 'OPEN').length + 1120}
+            {tickets.filter(t => t.status === 'OPEN').length}
           </span>
-          <span className="text-[10px] text-amber-600 font-medium block mt-0.5">15m triage SLA</span>
+          <span className="text-[10px] text-amber-600 font-medium block mt-0.5">Awaiting specialist claim</span>
         </div>
 
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-[11px] text-slate-500 block font-medium">Active In-Progress Jobs</span>
+          <span className="text-[11px] text-slate-500 block font-medium">Active In-Progress</span>
           <span className="font-mono text-xl font-bold text-sky-700 block mt-1 tabular-nums">
-            680
+            {tickets.filter(t => ['IN_PROGRESS', 'ON_SITE', 'TRAVELING', 'ASSIGNED'].includes(t.status)).length}
           </span>
-          <span className="text-[10px] text-sky-600 font-medium block mt-0.5">0 breached</span>
+          <span className="text-[10px] text-sky-600 font-medium block mt-0.5">Active locked tickets</span>
         </div>
 
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
-          <span className="text-[11px] text-slate-500 block font-medium">Total Platform GMV</span>
+          <span className="text-[11px] text-slate-500 block font-medium">Platform GMV</span>
           <span className="font-mono text-xl font-bold text-emerald-700 block mt-1 tabular-nums">
-            ₹25.4L
+            ₹{totalRevenue.toLocaleString('en-IN')}
           </span>
-          <span className="text-[10px] text-emerald-600 font-medium block mt-0.5">100% in Escrow</span>
+          <span className="text-[10px] text-emerald-600 font-medium block mt-0.5">Escrow balance</span>
         </div>
       </div>
 

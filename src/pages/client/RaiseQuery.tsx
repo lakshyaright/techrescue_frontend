@@ -21,6 +21,7 @@ export const RaiseQuery: React.FC = () => {
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -83,6 +84,7 @@ export const RaiseQuery: React.FC = () => {
     if (!termsAccepted) return;
     setIsSubmitting(true);
 
+    setSubmitError(null);
     const res = await createTicket({
       title,
       category,
@@ -100,6 +102,8 @@ export const RaiseQuery: React.FC = () => {
 
     if (res.success && res.ticket) {
       navigate(`/client/query/${res.ticket.id}`);
+    } else {
+      setSubmitError(res.error || 'Failed to submit query to database.');
     }
   };
 
@@ -113,6 +117,13 @@ export const RaiseQuery: React.FC = () => {
         <p className="text-xs text-slate-500 mt-1">
           Structured 3-step intake protocol to trigger SLA response and specialist lock
         </p>
+
+        {submitError && (
+          <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
+            <span>{submitError}</span>
+          </div>
+        )}
 
         {/* 3 Step Visual Pills */}
         <div className="flex items-center justify-between mt-6 max-w-xl">
