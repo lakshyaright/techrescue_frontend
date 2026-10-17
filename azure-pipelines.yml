@@ -37,7 +37,7 @@ steps:
         set -e
 
         mkdir -p /home/azureuser/frontend
- 
+        # tar -xzf /home/azureuser/source.tar.gz -C /home/azureuser/frontend
 
         cd /home/azureuser/frontend
 
