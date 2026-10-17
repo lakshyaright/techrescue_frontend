@@ -13,20 +13,20 @@
       displayName: 'Build and Deploy on Azure VM'
       inputs:
         sshEndpoint: 'Azure-Linux-VM-SSH'
-        runOptions: inline
-        interpreterCommand: /bin/bash
-        failOnStdErr: false
+        runOptions: 'inline'
         inline: |
           set -e
-
-          mkdir -p /home/azureuser/frontend
-          tar -xzf /home/azureuser/source.tar.gz -C /home/azureuser/frontend
-
-          cd /home/azureuser/frontend
-
+          
+          cd /home/azureuser/
+          git clone https://github.com/lakshyaright/techrescue_frontend.git
+          
+          cd /home/azureuser/techrescue_frontend
+          
           npm install -D esbuild@^0.28.0
           npm run build
-
+          
           sudo rsync -av --delete dist/ /var/www/html/
-
+          
           echo "Frontend deployed successfully"
+        failOnStdErr: false
+        readyTimeout: '20000'
