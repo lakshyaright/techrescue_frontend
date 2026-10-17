@@ -10,20 +10,20 @@ steps:
     clean: true
 
   # # 2. Upload frontend source to Azure VM
-  # - task: PowerShell@2
-  #   displayName: 'Upload Code to Azure VM'
-  #   inputs:
-  #     targetType: inline
-  #     script: |
-  #       tar --exclude=.git --exclude=node_modules -czf source.tar.gz .
+  - task: PowerShell@2
+    displayName: 'Upload Code to Azure VM'
+    inputs:
+      targetType: inline
+      script: |
+        tar --exclude=.git --exclude=node_modules -czf source.tar.gz .
 
-  #       scp -i "C:\Users\shiva.rai\Downloads\Devops\ssh-key\test.pem" `
-  #         source.tar.gz `
-  #         azureuser@104.42.217.83:/home/azureuser/source.tar.gz
+        scp -i "C:\Users\shiva.rai\Downloads\Devops\ssh-key\test.pem" `
+          source.tar.gz `
+          azureuser@104.42.217.83:/home/azureuser/source.tar.gz
 
-  #       if ($LASTEXITCODE -ne 0) {
-  #         throw "Upload failed"
-  #       }
+        if ($LASTEXITCODE -ne 0) {
+          throw "Upload failed"
+        }
 
   # 3. Build and deploy on Azure Linux VM
   - task: SSH@0
