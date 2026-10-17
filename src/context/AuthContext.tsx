@@ -7,6 +7,7 @@ interface AuthContextType {
   users: User[];
   role: UserRole;
   isAuthenticated: boolean;
+  refreshUsers: () => Promise<User[]>;
   switchRole: (role: UserRole) => void;
   loginAs: (userId: string) => void;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>;
@@ -63,15 +64,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const currentUser: User = activeUser || GUEST_USER;
   const role: UserRole = currentUser.role;
 
-  // Fetch all registered users from PostgreSQL database on mount
-  useEffect(() => {
-    api.get('/auth/users').then(res => {
+  // Real-time user fetcher from PostgreSQL
+  const refreshUsers = async (): Promise<User[]> => {
+    try {
+      const res = await api.get('/auth/users');
       if (res.success && Array.isArray(res.data)) {
         setUsers(res.data);
+        return res.data;
       }
-    }).catch(() => {
-      // Offline
-    });
+    } catch (err) {
+      console.warn('Failed to fetch live database users:', err);
+    }
+    return users;
+  };
+
+  // Fetch all registered users from PostgreSQL database on mount and when authentication changes
+  useEffect(() => {
+    refreshUsers();
   }, [isAuthenticated]);
 
   // Sync session with backend API /auth/me on mount if token is present
@@ -106,6 +115,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem(STORAGE_KEY_AUTH, 'true');
         setActiveUser(user);
         setIsAuthenticated(true);
+
+        // Fetch latest users
+        refreshUsers();
+
         return { success: true, user };
       }
 
@@ -133,12 +146,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem(STORAGE_KEY_AUTH, 'true');
         setActiveUser(user);
         setIsAuthenticated(true);
-        setUsers(prev => [user, ...prev]);
+
+        // Append and refresh live users
+        await refreshUsers();
+
         return { success: true, user };
       }
       return {
         success: false,
-        error: res.error || 'Failed to create user account.',
+        error: res.error || 'Failed to create user account in database.',
       };
     } catch (err: any) {
       return {
@@ -191,6 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         users,
         role,
         isAuthenticated,
+        refreshUsers,
         switchRole,
         loginAs,
         login,

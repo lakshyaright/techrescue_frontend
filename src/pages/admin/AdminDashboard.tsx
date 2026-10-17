@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -18,9 +18,14 @@ import { StatusBadge, PriorityBadge } from '../../components/common/Badge';
 import { useNavigate } from 'react-router-dom';
 
 export const AdminDashboard: React.FC = () => {
-  const { tickets, activityLogs, payments } = useData();
-  const { users } = useAuth();
+  const { tickets, activityLogs, payments, refreshData } = useData();
+  const { users, refreshUsers } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    refreshUsers();
+    refreshData();
+  }, []);
 
   const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
 
