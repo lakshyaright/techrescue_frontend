@@ -1,0 +1,35 @@
+
+trigger:
+- main
+
+# Replace with your actual Windows agent pool name
+pool:
+  name: app-agent-pool
+
+variables:
+  nodeVersion: '22.x'
+
+stages:
+  - stage: CI
+    displayName: 'Frontend Continuous Integration'
+
+    jobs:
+      - job: Build
+        displayName: 'Build Axion Frontend'
+
+        steps:
+          - checkout: self
+            clean: true
+
+          - script: npm install
+            displayName: 'Install Dependencies'
+
+          - script: npm run build
+            displayName: 'Build Production Frontend'
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Frontend Artifact'
+            inputs:
+              targetPath: '$(Build.SourcesDirectory)/dist'
+              artifact: 'frontend-dist'
+              publishLocation: 'pipeline'
