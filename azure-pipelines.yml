@@ -1,37 +1,37 @@
-  trigger:
-    - main
 
-  pool:
-    name: app-agent-pool
+trigger:
+  - main
 
-  steps:
-    # 1. Checkout code on Windows agent
-    - checkout: self
-      clean: true
-    # 3. Build and deploy on Azure Linux VM
-    - task: SSH@0
-      displayName: 'Build and Deploy on Azure VM'
-      inputs:
-        sshEndpoint: 'Azure-Linux-VM-SSH'
-        runOptions: 'inline'
-        inline: |
-          set -e
-          
-          cd /home/azureuser/
-          git clone https://github.com/lakshyaright/techrescue_frontend.git
-          
-          cd /home/azureuser/techrescue_frontend
-          
-          npm install -D esbuild@^0.28.0
-          npm run build
-          
-          
-          cd /home/azureuser/techrescue_frontend/dist
-          
-          sudo cp -r * /var/www/html/
-          
-          sudo rsync -av --delete dist/ /var/www/html/
-          
-          echo "Frontend deployed successfully"
-        failOnStdErr: false
-        readyTimeout: '20000'
+pool:
+  name: app-agent-pool
+
+steps:
+  - checkout: none
+
+  - task: SSH@0
+    displayName: 'Build and Deploy on Azure VM'
+    inputs:
+      sshEndpoint: 'Azure-Linux-VM-SSH'
+      runOptions: inline
+      interpreterCommand: /bin/bash
+      failOnStdErr: false
+      readyTimeout: '20000'
+      inline: |
+        set -e
+
+        cd /home/azureuser
+
+        if [ -d techrescue_frontend/.git ]; then
+          cd techrescue_frontend
+          git pull origin main
+        else
+          git clone --branch main https://github.com/lakshyaright/techrescue_frontend.git
+          cd techrescue_frontend
+        fi
+
+        npm ci
+        npm run build
+
+        sudo rsync -av --delete dist/ /var/www/html/
+
+        echo "Frontend deployed successfully"
