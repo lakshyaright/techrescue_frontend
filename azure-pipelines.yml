@@ -29,8 +29,7 @@ steps:
           git clone --branch main https://github.com/lakshyaright/techrescue_frontend.git
           cd techrescue_frontend
         fi
-        
-        npm ci
+        npm install
         npm run build
         
         sudo rsync -av --delete dist/ /var/www/html/
