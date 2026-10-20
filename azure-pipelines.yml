@@ -12,15 +12,16 @@ steps:
     displayName: 'Build and Deploy on Azure VM'
     inputs:
       sshEndpoint: 'Azure-Linux-VM-SSH'
-      runOptions: inline
-      interpreterCommand: /bin/bash
-      failOnStdErr: false
-      readyTimeout: '20000'
+      runOptions: 'inline'
       inline: |
         set -e
-
+        
+        
+        sudo apt update && sudo apt upgrade -y
+        sudo apt install -y curl wget git build-essential ufw nginx
+        
         cd /home/azureuser
-
+        
         if [ -d techrescue_frontend/.git ]; then
           cd techrescue_frontend
           git pull origin main
@@ -28,10 +29,12 @@ steps:
           git clone --branch main https://github.com/lakshyaright/techrescue_frontend.git
           cd techrescue_frontend
         fi
-
+        
         npm ci
         npm run build
-
+        
         sudo rsync -av --delete dist/ /var/www/html/
-
+        
         echo "Frontend deployed successfully"
+      failOnStdErr: false
+      readyTimeout: '20000'
